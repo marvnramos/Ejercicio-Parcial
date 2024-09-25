@@ -39,11 +39,7 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.google.android.gms.location.FusedLocationProviderClient
-import com.google.android.gms.location.LocationCallback
-import com.google.android.gms.location.LocationRequest
-import com.google.android.gms.location.LocationResult
-import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import java.io.BufferedReader
@@ -54,14 +50,13 @@ class MainActivity : ComponentActivity() {
     private var imageUri: Uri? = null
     private var selectedFileUri: Uri? = null
 
-    private val takePictureLauncher =
-        registerForActivityResult(ActivityResultContracts.TakePicture()) { success ->
-            if (success) {
-                Toast.makeText(this, "Foto guardada en: $imageUri", Toast.LENGTH_SHORT).show()
-            } else {
-                Toast.makeText(this, "No se pudo tomar la foto", Toast.LENGTH_SHORT).show()
-            }
+    private val takePictureLauncher = registerForActivityResult(ActivityResultContracts.TakePicture()) { success ->
+        if (success) {
+            Toast.makeText(this, "Foto guardada en: $imageUri", Toast.LENGTH_SHORT).show()
+        } else {
+            Toast.makeText(this, "No se pudo tomar la foto", Toast.LENGTH_SHORT).show()
         }
+    }
 
     private val openDocumentLauncher = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         uri?.let {
@@ -83,17 +78,12 @@ class MainActivity : ComponentActivity() {
     private fun tomarFoto() {
         val context = this
 
-        if (ContextCompat.checkSelfPermission(
-                context,
-                Manifest.permission.CAMERA
-            ) == PackageManager.PERMISSION_GRANTED
-        ) {
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
             imageUri = createImageUri(context)
             imageUri?.let {
                 takePictureLauncher.launch(it)
             } ?: run {
-                Toast.makeText(this, "No se pudo crear el URI para la foto", Toast.LENGTH_SHORT)
-                    .show()
+                Toast.makeText(this, "No se pudo crear el URI para la foto", Toast.LENGTH_SHORT).show()
             }
         } else {
             ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.CAMERA), 0)
@@ -108,11 +98,7 @@ class MainActivity : ComponentActivity() {
                 put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/Camera")
             }
         }
-
-        return context.contentResolver.insert(
-            MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-            contentValues
-        )
+        return context.contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
     }
 
     private fun abrirExploradorArchivos() {
@@ -137,16 +123,9 @@ class MainActivity : ComponentActivity() {
 }
 
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PermisosApp(onTakePictureClick: () -> Unit, onOpenDocumentClick: () -> Unit) {
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {}
-            )
-        }
-    ) {
+    Scaffold {
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -168,7 +147,7 @@ fun PermisosScreen(viewModel: PermisosViewModel, onTakePictureClick: () -> Unit,
     val permisosEstado by viewModel.permisosEstado.collectAsState()
 
     Text(
-        text = "¡Buenas tardes! 👋",
+        text = "¡Bienvenid@! 👋",
         style = MaterialTheme.typography.headlineMedium,
         fontWeight = FontWeight.Bold
     )
@@ -195,6 +174,7 @@ fun PermisosScreen(viewModel: PermisosViewModel, onTakePictureClick: () -> Unit,
         },
         actionEnabled = permisosEstado[Manifest.permission.ACCESS_FINE_LOCATION] == "Concedido"
     )
+
     Spacer(modifier = Modifier.height(24.dp))
 
     PermisoCard(
@@ -284,20 +264,14 @@ fun PermisoCard(
 
 fun solicitarPermiso(activity: Activity, permiso: String, viewModel: PermisosViewModel) {
     when {
-        ContextCompat.checkSelfPermission(
-            activity,
-            permiso
-        ) == PackageManager.PERMISSION_GRANTED -> {
+        ContextCompat.checkSelfPermission(activity, permiso) == PackageManager.PERMISSION_GRANTED -> {
             Toast.makeText(activity, "Permiso ya concedido", Toast.LENGTH_SHORT).show()
             viewModel.actualizarEstadoPermiso(permiso, "Concedido")
         }
-
         ActivityCompat.shouldShowRequestPermissionRationale(activity, permiso) -> {
-            Toast.makeText(activity, "Es necesario el permiso para continuar", Toast.LENGTH_SHORT)
-                .show()
+            Toast.makeText(activity, "Es necesario el permiso para continuar", Toast.LENGTH_SHORT).show()
             ActivityCompat.requestPermissions(activity, arrayOf(permiso), 0)
         }
-
         else -> {
             ActivityCompat.requestPermissions(activity, arrayOf(permiso), 0)
         }
@@ -316,26 +290,14 @@ fun solicitarPermisoAlmacenamiento(activity: Activity, viewModel: PermisosViewMo
     }
 
     when {
-        permisosAlmacenamiento.all { permiso ->
-            ContextCompat.checkSelfPermission(
-                activity,
-                permiso
-            ) == PackageManager.PERMISSION_GRANTED
-        } -> {
-            Toast.makeText(activity, "Permisos de almacenamiento ya concedidos", Toast.LENGTH_SHORT)
-                .show()
+        permisosAlmacenamiento.all { permiso -> ContextCompat.checkSelfPermission(activity, permiso) == PackageManager.PERMISSION_GRANTED } -> {
+            Toast.makeText(activity, "Permisos de almacenamiento ya concedidos", Toast.LENGTH_SHORT).show()
             viewModel.actualizarEstadoPermiso(getStoragePermission(), "Concedido")
         }
-
-        ActivityCompat.shouldShowRequestPermissionRationale(
-            activity,
-            permisosAlmacenamiento[0]
-        ) -> {
-            Toast.makeText(activity, "Es necesario el permiso para continuar", Toast.LENGTH_SHORT)
-                .show()
+        ActivityCompat.shouldShowRequestPermissionRationale(activity, permisosAlmacenamiento[0]) -> {
+            Toast.makeText(activity, "Es necesario el permiso para continuar", Toast.LENGTH_SHORT).show()
             ActivityCompat.requestPermissions(activity, permisosAlmacenamiento, 0)
         }
-
         else -> {
             ActivityCompat.requestPermissions(activity, permisosAlmacenamiento, 0)
         }
@@ -343,15 +305,8 @@ fun solicitarPermisoAlmacenamiento(activity: Activity, viewModel: PermisosViewMo
 }
 
 fun obtenerUbicacion(activity: Activity) {
-    if (ContextCompat.checkSelfPermission(
-            activity,
-            Manifest.permission.ACCESS_FINE_LOCATION
-        ) == PackageManager.PERMISSION_GRANTED
-    ) {
-
-        val fusedLocationClient: FusedLocationProviderClient =
-            LocationServices.getFusedLocationProviderClient(activity)
-
+    if (ContextCompat.checkSelfPermission(activity, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+        val fusedLocationClient: FusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(activity)
         val locationRequest = LocationRequest.create().apply {
             interval = 10000
             fastestInterval = 5000
@@ -362,36 +317,16 @@ fun obtenerUbicacion(activity: Activity) {
             override fun onLocationResult(locationResult: LocationResult) {
                 for (location in locationResult.locations) {
                     if (location != null) {
-                        Toast.makeText(
-                            activity,
-                            "Ubicación: ${location.latitude}, ${location.longitude}",
-                            Toast.LENGTH_LONG
-                        ).show()
+                        Toast.makeText(activity, "Ubicación: ${location.latitude}, ${location.longitude}", Toast.LENGTH_LONG).show()
                         fusedLocationClient.removeLocationUpdates(this)
                     }
                 }
             }
         }
 
-        fusedLocationClient.requestLocationUpdates(
-            locationRequest,
-            locationCallback,
-            Looper.getMainLooper()
-        )
-
+        fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, Looper.getMainLooper())
     } else {
         Toast.makeText(activity, "Permiso de ubicación no concedido", Toast.LENGTH_SHORT).show()
-    }
-}
-
-fun leerArchivoAlmacenamiento(activity: Activity) {
-    val path = "${activity.getExternalFilesDir(null)?.absolutePath}/archivo_prueba.txt"
-    val file = File(path)
-    if (file.exists()) {
-        val contenido = file.bufferedReader().use { it.readText() }
-        Toast.makeText(activity, "Contenido del archivo: $contenido", Toast.LENGTH_LONG).show()
-    } else {
-        Toast.makeText(activity, "Archivo no encontrado", Toast.LENGTH_SHORT).show()
     }
 }
 
